@@ -26,6 +26,19 @@ unsigned char otherAddMachineCode[] = {
     0x83, 0xc0, 0x0a,       // add    $0xa,%eax
     0x5d,                   // pop    %rbp
     0xc3,                   // ret
+
+    // 30:
+    0xf3, 0x0f, 0x1e, 0xfa, // endbr64
+    0x55, 0x48, 0x89, 0xe5, // push %rbp
+    0x48, 0x89, 0xe5,		// mov %rsp, %rbp
+    0x89, 0x7d, 0xfc,		// move %edi,-0x4(%rbp)
+    0x89, 0x75, 0xf8,       // mov    %esi,-0x8(%rbp)
+    0x8b, 0x55, 0xfc,       // mov    -0x4(%rbp),%edx
+    0x8b, 0x45, 0xf8,       // mov    -0x8(%rbp),%eax
+    0x01, 0xd0,             // add    %edx,%eax
+    0x83, 0xc0, 0x0a,       // add    $0xa,%eax
+    0x5d,                   // pop    %rbp
+    0xc3,                   // ret
 };
 
 typedef int (*operation_t)(int, int);
@@ -97,6 +110,11 @@ int main() {
 	printf("Calling addFunc(5, 15): %d\n", addFunc(5, 15));
 
     addFunc = mapMachineCodeToFunction(otherAddMachineCode, sizeof(otherAddMachineCode));
+
+    void* mappedMemory = (void*)addFunc;
+//    mappedMemory += 30; // Find the next function.
+
+    addFunc = (operation_t)(mappedMemory + 30); // Find the next function;
 
 	printf("Calling addFunc(5, 15): %d\n", addFunc(5, 15));
 }
