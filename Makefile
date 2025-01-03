@@ -4,6 +4,7 @@ LDFLAGS = -shared
 
 LIB_EXAMPLE = libexample.so
 
+
 dlopen_load: load_as_dlopen.o $(LIB_EXAMPLE)
 	$(CC) -o $@ load_as_dlopen.o -L.
 

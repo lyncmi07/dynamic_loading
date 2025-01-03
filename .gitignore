@@ -2,3 +2,4 @@
 dlopen_load
 dyn_load
 *.so
+*.swp
