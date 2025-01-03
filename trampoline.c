@@ -14,6 +14,20 @@ int addPatched(int a, int b) {
 	return a + b;
 }
 
+unsigned char otherAddMachineCode[] = {
+    0xf3, 0x0f, 0x1e, 0xfa, // endbr64
+    0x55, 0x48, 0x89, 0xe5, // push %rbp
+    0x48, 0x89, 0xe5,		// mov %rsp, %rbp
+    0x89, 0x7d, 0xfc,		// move %edi,-0x4(%rbp)
+    0x89, 0x75, 0xf8,       // mov    %esi,-0x8(%rbp)
+    0x8b, 0x55, 0xfc,       // mov    -0x4(%rbp),%edx
+    0x8b, 0x45, 0xf8,       // mov    -0x8(%rbp),%eax
+    0x01, 0xd0,             // add    %edx,%eax
+    0x83, 0xc0, 0x0a,       // add    $0xa,%eax
+    0x5d,                   // pop    %rbp
+    0xc3,                   // ret
+};
+
 typedef int (*operation_t)(int, int);
 
 int hook_function(operation_t originalFunc, operation_t newFunc) {
@@ -45,6 +59,30 @@ int hook_function(operation_t originalFunc, operation_t newFunc) {
 
 }
 
+operation_t mapMachineCodeToFunction(unsigned char* code, unsigned int codeSize) {
+    size_t page_size = sysconf(_SC_PAGESIZE);
+
+    if (page_size < codeSize) {
+      perror("Code frag too large");
+      return NULL;
+    }
+
+    void* execMem = mmap(NULL, page_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (execMem == MAP_FAILED) {
+      perror("mmap");
+      return NULL;
+    }
+
+    memcpy(execMem, code, codeSize);
+
+	if (mprotect(execMem, page_size, PROT_READ | PROT_EXEC) == -1) {
+		perror("mprotect read/exec");
+		return NULL;
+	}
+
+    return (operation_t)execMem;
+}
+
 int main() {
 	printf("Hello world!\n");
 
@@ -53,4 +91,12 @@ int main() {
 	hook_function(add, addPatched);
 
 	printf("Calling add(5, 15): %d\n", add(5, 15));
+
+    operation_t addFunc = add;
+
+	printf("Calling addFunc(5, 15): %d\n", addFunc(5, 15));
+
+    addFunc = mapMachineCodeToFunction(otherAddMachineCode, sizeof(otherAddMachineCode));
+
+	printf("Calling addFunc(5, 15): %d\n", addFunc(5, 15));
 }
