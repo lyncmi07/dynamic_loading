@@ -1,9 +1,14 @@
 CC = gcc
-CFLAGS = -Wall -fPIC
+CFLAGS = -Wall -fPIC -g
 LDFLAGS = -shared
 
 LIB_EXAMPLE = libexample.so
 
+trampoline: trampoline.o $(LIB_EXAMPLE)
+	$(CC) -o $@ trampoline.o -L.
+
+trampoline.o: trampoline.c
+	$(CC) $(CFLAGS) -c $<
 
 dlopen_load: load_as_dlopen.o $(LIB_EXAMPLE)
 	$(CC) -o $@ load_as_dlopen.o -L.
@@ -25,4 +30,4 @@ libexample.o: libexample.c
 
 
 clean:
-	rm -f *.0 $(TARGET) $(LIB_EXAMPLE)
+	rm -f *.o trampoline dlopen_load init_load $(LIB_EXAMPLE)

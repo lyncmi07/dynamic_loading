@@ -1,5 +1,6 @@
 *.o
 dlopen_load
 dyn_load
+trampoline
 *.so
 *.swp
